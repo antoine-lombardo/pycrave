@@ -2,9 +2,8 @@ from copy import deepcopy
 from datetime import datetime
 import json
 
-from pycrave.common.media import MediaEpisode, MediaMovie
-from ...common.serie_result_info import SerieResultInfo
-from ...common.movie_result_info import MovieResultInfo
+from ...common.media import MediaEpisode, MediaMovie
+from ...common.result_info import SerieResultInfo, MovieResultInfo
 from ...common.search_result import SearchResult
 from ...common.utils import format_episode_number
 

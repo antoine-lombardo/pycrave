@@ -13,3 +13,16 @@ class ResultInfo(ABC):
     self.image: str = ''
 
     self.medias: Dict[str, Media] = {}
+
+
+class MovieResultInfo(ResultInfo):
+  def __init__(self):
+    super().__init__()
+    self.type = 'movie'
+    self.year: int = 0
+
+
+class SerieResultInfo(ResultInfo):
+  def __init__(self):
+    super().__init__()
+    self.type = 'serie'

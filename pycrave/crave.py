@@ -7,8 +7,7 @@ import logging
 # Common
 from .common.play_infos import PlayInfos
 from .common.result_info import ResultInfo
-from .common.serie_result_info import SerieResultInfo
-from .common.movie_result_info import MovieResultInfo
+from .common.result_info import SerieResultInfo, MovieResultInfo
 from .common.search_result import SearchResult
 from .common.account import Account
 from .common.platform import Platform

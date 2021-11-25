@@ -1,7 +1,5 @@
 from abc import ABC, abstractmethod
-from .result_info import ResultInfo
-from .serie_result_info import SerieResultInfo
-from .movie_result_info import MovieResultInfo
+from .result_info import ResultInfo, SerieResultInfo, MovieResultInfo
 from .account import Account
 from .search_result import SearchResult
 from .play_infos import PlayInfos
