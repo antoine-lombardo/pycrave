@@ -4,6 +4,8 @@ import json
 from fuzzywuzzy import fuzz, process
 import logging
 
+from pycrave.common.media import Media
+
 # Common
 from .common.play_infos import PlayInfos
 from .common.result_info import ResultInfo
@@ -11,6 +13,7 @@ from .common.result_info import SerieResultInfo, MovieResultInfo
 from .common.search_result import SearchResult
 from .common.account import Account
 from .common.platform import Platform
+from .common.utils import format_episode_number
 
 # Crave stuff
 from .login_handler import CraveLoginHandler
@@ -96,28 +99,41 @@ class Crave(Platform):
     '''
     Get play infos
     '''
-    def get_play_infos(self, result_infos: ResultInfo, season: int = None, episode: int = None, language: str = 'fr'):
+    def get_play_infos(self, result_infos: ResultInfo, season: int = None, episode: int = None):
         if result_infos.type == 'movie':
-            return self._get_play_infos_movie(result_infos, language)
+            return self._get_play_infos_movie(result_infos)
         elif result_infos.type == 'serie':
-            if season is None or episode is None:
-                return None
-            else:
-                return self._get_play_infos_episode(result_infos, season, episode, language)
+            return self._get_play_infos_episode(result_infos, season, episode)
         return None
 
     '''
     Get play infos (movie)
     '''
     def _get_play_infos_movie(self, result_infos: MovieResultInfo, language: str = 'fr') -> PlayInfos:
-        destination = result_infos.additionnal_infos['destinations'][language]
-        return self._get_play_infos_id(result_infos.play_id, destination, language=language)
+        if result_infos.year > 0:
+            logger.debug('Getting play infos for "{} ({})"...'.format(result_infos.title, str(result_infos.year)))
+        else:
+            logger.debug('Getting play infos for "{}"...'.format(result_infos.title))
+        return self._get_play_infos_media(result_infos.medias['default'])
 
     '''
     Get play infos (episode)
     '''
     def _get_play_infos_episode(self, result_infos: SerieResultInfo, season: int, episode: int, language: str = 'fr') -> PlayInfos:
-        pass
+        if season is None or episode is None:
+            logger.error('No season or episode provided')
+            return None
+        logger.debug('Getting play infos for "{} {}"...'.format(result_infos.title, format_episode_number(season, episode)))
+        for media in result_infos.medias.values():
+            if media.season == season and media.episode == episode:
+                return self._get_play_infos_media(media)
+        logger.debug('Episode {} not found'.format(format_episode_number(season, episode)))
+
+    def _get_play_infos_media(self, media: Media) -> PlayInfos:
+        return self._get_play_infos_id(
+            id =          media.play_id,
+            destination = media.additionnal_infos['destination'],
+            language =    media.playback_languages[0])
 
     '''
     Get play infos (id)

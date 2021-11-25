@@ -25,4 +25,12 @@ serie_infos = crave.get_result_infos(search_result[0])
 search_result = crave.search("justice league")
 movie_infos = crave.get_result_infos(search_result[0])
 account = crave.get_account_infos()
+
+play_infos_serie = crave.get_play_infos(serie_infos['fr'], season = 1, episode = 1)
+logger.info('Manifest: {}'.format(play_infos_serie.manifest_url))
+logger.info('License URL: {}'.format(play_infos_serie.license_url))
+
+play_infos_movie = crave.get_play_infos(movie_infos['fr'])
+logger.info('Manifest: {}'.format(play_infos_movie.manifest_url))
+logger.info('License URL: {}'.format(play_infos_movie.license_url))
 print("ss")

@@ -1,6 +1,10 @@
 import json
 from ...common.play_infos import PlayInfos
 import requests
+import logging
+
+# Logger
+logger = logging.getLogger(__name__)
 
 
 PLATFORM = 'android'
@@ -16,15 +20,15 @@ class CAPI():
   @staticmethod
   def get_play_infos(destination: str, content_id: str, language: str, token: str = None, filter: str = None) -> PlayInfos:
     # get package id
-    print('-> Making CAPI request...')
+    logger.debug('Making CAPI request...')
     url = CAPI.get_content_url(destination, content_id)
     url += '?$lang={}&$include=[Images,Authentication,AdTarget,Season,ContentPackages,Media,Owner,Omniture,Tags,ChannelAffiliate]'.format(language)
     response = requests.get(url=url, headers=HEADERS)
     if response.status_code != 200:
-        print('---> Bad response ().'.format(str(response.status_code)))
-        return None
+      logger.error('Bad response ({})'.format(str(response.status_code)))
+      return None
     package_id = str(json.loads(response.text)['ContentPackages'][0]['Id'])
-    print('---> Found package ID: {}'.format(package_id))
+    logger.debug('Package ID: {}'.format(package_id))
     # suffixes
     manifest_url_suffix = []
     license_url_suffix = []
@@ -44,22 +48,12 @@ class CAPI():
       manifest_url += '?{}'.format('&'.join(manifest_url_suffix))
     if len(license_url_suffix) > 0:
       license_url += '?{}'.format('&'.join(license_url_suffix))
-    # making manifest request
-    print('-> Making manifest request...')
-    manifest_response = requests.get(url=manifest_url, headers=HEADERS)
-    if manifest_response.status_code != 200:
-      if manifest_response.status_code == 403:
-        print('---> Cannot load manifest, too many concurrent connections.')
-      else:
-        print('---> Cannot load manifest.')
-      return None
     return PlayInfos(
         manifest_url=manifest_url,
-        manifest_response=manifest_response,
         subtitles_url=subtitles_url,
-        license_token=token,
         license_url=license_url,
-        headers=HEADERS
+        manifest_headers=HEADERS,
+        license_headers=HEADERS
     )
 
   @staticmethod
