@@ -1,4 +1,4 @@
-import json
+import json, logging
 from typing import Dict, List
 from datetime import datetime, timedelta
 import base64
@@ -8,6 +8,9 @@ from pycrave.lib.graphql.graphql import GraphQL
 from .common.account import Account
 from .common.login_handler import LoginHandler
 from .consts import *
+
+# Logger
+logger = logging.getLogger(__name__)
 
 class CraveLoginHandler(LoginHandler):
   access_token: str = None
@@ -56,37 +59,58 @@ class CraveLoginHandler(LoginHandler):
     self._save_cache()
 
   def ensure_login(self, force_refresh: bool = False) -> bool:
-    # Check if credentials are provided
+    #===========================================================
+    # Check credentials
+    #===========================================================
     if self.username is None or self.password is None:
       self.access_token = None
       self.refresh_token = None
       self.expiry = None
       self.subscriptions = None
       self._save_cache()
+      logger.info('Cannot ensure logging: No username or password provided')
       return False
+
+    #===========================================================
+    # Skip if current token is valid
+    #===========================================================
     if not self._check_expiry() and not force_refresh:
       return True
-    # Try refresh
-    print('Refreshing token...')
+
+    #===========================================================
+    # Refresh token if possible
+    #===========================================================
+    logger.debug('Refreshing token...')
     response = None
     if self.refresh_token is not None:
       response = self._make_refresh_request()
       if response.status_code != 200:
+        logger.debug('Refreshing token failed')
         response = None
-    # Try username/password
-    print('Trying username/password login...')
+
+    #===========================================================
+    # Do a username/password login if required
+    #===========================================================
     if response is None:
+      logger.debug('Trying username/password login...')
       response = self._make_login_request()
+
+    #===========================================================
+    # Handle refresh + login failure
+    #===========================================================
     if response.status_code != 200:
-      print('login failed')
-          # Reset attributes
+      logger.info('Login failed')
+      # Reset attributes
       self.access_token = None
       self.refresh_token = None
       self.expiry = None
       self.subscriptions = None
       self._save_cache()
       return False
-    # Parse response
+
+    #===========================================================
+    # Parse refresh/login response
+    #===========================================================
     try:
       response_parsed = json.loads(response.text)
       self.access_token = response_parsed['access_token']
@@ -97,10 +121,13 @@ class CraveLoginHandler(LoginHandler):
         if scope.startswith('subscription:'):
           self.subscriptions = scope.replace('subscription:', '').split(',')
       self._save_cache()
-      print('-> Token acquired! valid until: {}'.format(self.expiry.strftime("%Y/%m/%d %H:%M:%S")))
+      logger.debug('New token acquired. Valid until: {}'.format(self.expiry.strftime("%Y/%m/%d %H:%M:%S")))
       return True
     except:
-      print('login response invalid')
+      #===========================================================
+      # Handle invalid refresh/login response
+      #===========================================================
+      logger.info('Refresh/login response invalid')
       self.access_token = None
       self.refresh_token = None
       self.expiry = None
@@ -113,7 +140,7 @@ class CraveLoginHandler(LoginHandler):
   # ===================================================================
 
   def _make_refresh_request(self):
-    print('making a refresh request...')
+    logger.debug('Making a refresh request...')
     url = 'https://account.bellmedia.ca/api/login/v2.1?grant_type=refresh_token'
     headers = {
       'accept-encoding': 'gzip',

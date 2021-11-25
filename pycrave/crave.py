@@ -2,6 +2,7 @@
 from copy import copy
 import json
 from fuzzywuzzy import fuzz, process
+import logging
 
 # Common
 from .common.play_infos import PlayInfos
@@ -21,6 +22,9 @@ from typing import Any, Dict, List, Union
 from .lib.graphql.graphql import GraphQL
 from .lib.capi.capi import CAPI
 
+# Logger
+logger = logging.getLogger(__name__)
+
 
 class Crave(Platform):
     name = 'Crave'
@@ -28,35 +32,63 @@ class Crave(Platform):
     login_handler: CraveLoginHandler
     account_infos: Account = None
 
-    def __init__(self, cache_dir, username=None, password=None):
+    def __init__(self, cache_dir: str, username: str = None, password: str = None, metadata_lang: str = 'fr'):
+        '''
+        Initialises the client.
+            Args:
+                cache_dir (str): Directory to store cache files
+                username (str): Account username
+                password (str): Account password
+                metadata_lang (str): Language used to fetch metadata
+        '''
         super().__init__(cache_dir)
-        self.graphql = GraphQL(self.session, 'https://www.crave.ca/space-graphql/graphql/', self.tag)
+        self.graphql = GraphQL(self.session, 'https://www.crave.ca/space-graphql/graphql/', self.tag, metadata_language=metadata_lang)
         self.login_handler = CraveLoginHandler(self.cache_dir, self.session, username, password)
         if self.login_handler.ensure_login():
             self.get_account_infos()
         else:
-            print('-> Unable to login from cache')
+            logger.info('Unable to login')
 
     # ===================================================================
     #   SEARCH
     # ===================================================================
 
-    '''
-    Search a movie or serie in the database
-    '''
     def search(self, input: str)-> List[SearchResult]:
-        results = self.graphql.search(input)
-        return [x for _, x in sorted(results, reverse=True)][:50]
+        '''
+        Search a title.
+            Args:
+                input (str): The search terms
+            Returns:
+                List[SearchResult]: A list of all the search results. First element is the most relevent one.
+        '''
+        logger.debug('Making a search for "{}"...'.format(input))
+        return self.graphql.search(input)
 
     # ===================================================================
     #   RESULT INFOS
     # ===================================================================
 
-    '''
-    Get detailed result infos
-    '''
     def get_result_infos(self, result: SearchResult) -> Dict[str, Union[MovieResultInfo, SerieResultInfo]]:
+        '''
+        Get more infos about a specific search result
+            Args:
+                result (SearchResult): The search result
+            Returns:
+                Dict[str, Union[MovieResultInfo, SerieResultInfo]]: A dictionary of all the versions available (french/english) and corresponding infos
+        '''
+        logger.debug('Getting infos for "{}"...'.format(result.title))
         return self.graphql.get_result_infos(result)
+
+    def get_result_infos_id(self, content_id: str) -> Dict[str, Union[MovieResultInfo, SerieResultInfo]]:
+        '''
+        Get more infos about a specific search result
+            Args:
+                id (str): The Content ID
+            Returns:
+                Dict[str, Union[MovieResultInfo, SerieResultInfo]]: A dictionary of all the versions available (french/english) and corresponding infos
+        '''
+        logger.debug('Getting infos for "{}"...'.format(content_id))
+        return self.graphql.get_result_infos_id(content_id)
 
     # ===================================================================
     #   PLAY INFOS

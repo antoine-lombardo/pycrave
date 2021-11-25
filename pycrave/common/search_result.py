@@ -12,6 +12,7 @@ class SearchResult():
     self.id: str = ''
     self.image: str = ''
     self.platform_tag: str = ''
+    self.version: str = None
     if dict is not None:
       self.__dict__.update(dict)
 
