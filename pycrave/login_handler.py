@@ -3,8 +3,6 @@ from typing import Dict, List
 from datetime import datetime, timedelta
 import base64
 
-from pycrave.lib.graphql.graphql import GraphQL
-
 from .common.account import Account
 from .common.login_handler import LoginHandler
 from .consts import *
@@ -16,7 +14,10 @@ class CraveLoginHandler(LoginHandler):
   access_token: str = None
   refresh_token: str = None
   expiry: datetime = None
+
+  scopes: List[str] = None
   subscriptions: List[str] = None
+  packages: List[str] = None
 
   def __init__(self, cache_dir, session, username=None, password=None):
     super().__init__(cache_dir, session, username, password)
@@ -29,10 +30,12 @@ class CraveLoginHandler(LoginHandler):
         self.refresh_token = None
         self.expiry = None
         self.subscriptions = None
+        self.scopes = None
+        self.packages = None
         self.username = username
         self.password = password
         self._save_cache()
-    self.ensure_login(True)
+    self.ensure_login(False)
 
   # ===================================================================
   #   LOGIN
@@ -118,10 +121,21 @@ class CraveLoginHandler(LoginHandler):
       self.access_token = response_parsed['access_token']
       self.refresh_token = response_parsed['refresh_token']
       self.expiry = datetime.now() + timedelta(0,response_parsed['expires_in'])
+      # Scopes
       scopes = response_parsed['scope'].split(' ')
       for scope in scopes:
         if scope.startswith('subscription:'):
-          self.subscriptions = scope.replace('subscription:', '').split(',')
+          self.scopes = scope.replace('subscription:', '').split(',')
+      # Subscriptions
+      self.subscriptions = []
+      for scope in self.scopes:
+        if scope in SCOPE_TO_SUBSCRIPTION_NAME:
+          self.subscriptions.append(SCOPE_TO_SUBSCRIPTION_NAME[scope])
+      # Packages
+      self.packages = []
+      for subscription in self.subscriptions:
+        if subscription in SUBSCRIPTION_NAME_TO_PACKAGE_NAME:
+          self.packages.append(SUBSCRIPTION_NAME_TO_PACKAGE_NAME[subscription])
       self._save_cache()
       logger.debug('New token acquired. Valid until: {}'.format(self.expiry.strftime("%Y/%m/%d %H:%M:%S")))
       return True
@@ -190,24 +204,31 @@ class CraveLoginHandler(LoginHandler):
   # ===================================================================
 
   def _process_cache_obj(self, cache_obj) -> bool:
-    if cache_obj is None:
+    if cache_obj is not None:
+      try:
+        self.username = cache_obj['username']
+        self.password = cache_obj['password']
+        self.access_token = cache_obj['access_token']
+        self.refresh_token = cache_obj['refresh_token']
+        self.subscriptions = cache_obj['subscriptions']
+        self.scopes = cache_obj['scopes']
+        self.packages = cache_obj['packages']
+        try:
+          self.expiry = datetime.strptime(cache_obj['expiry'], '%Y/%m/%d %H:%M:%S')
+        except:
+          self.expiry = None
+        return True
+      except:
+        pass
       self.username = None
       self.password = None
       self.access_token = None
       self.refresh_token = None
       self.expiry = None
       self.subscriptions = None
+      self.scopes = None
+      self.packages = None
       return False
-    else:
-      self.username = cache_obj['username']
-      self.password = cache_obj['password']
-      self.access_token = cache_obj['access_token']
-      self.refresh_token = cache_obj['refresh_token']
-      self.subscriptions = cache_obj['subscriptions']
-      try:
-        self.expiry = datetime.strptime(cache_obj['expiry'], '%Y/%m/%d %H:%M:%S')
-      except:
-        self.expiry = None
 
   def _create_cache_obj(self) -> Dict[str, str]:
     try:
@@ -220,5 +241,7 @@ class CraveLoginHandler(LoginHandler):
       'access_token': self.access_token,
       'refresh_token': self.refresh_token,
       'expiry': expiry,
-      'subscriptions': self.subscriptions
+      'subscriptions': self.subscriptions,
+      'scopes': self.scopes,
+      'packages': self.packages
     }

@@ -8,7 +8,7 @@ from ...common.search_result import SearchResult
 from ...common.utils import format_episode_number
 
 import requests, logging
-from .consts import GRAPHQL_SUBS_ID, HEADERS, SEARCH_PAYLOAD, MEDIA_PAYLOAD, SEASON_PAYLOAD
+from .consts import HEADERS, SEARCH_PAYLOAD, MEDIA_PAYLOAD, SEASON_PAYLOAD
 from typing import Any, Dict, List, Tuple, Union
 from fuzzywuzzy import fuzz
 
@@ -16,22 +16,17 @@ from fuzzywuzzy import fuzz
 logger = logging.getLogger(__name__)
 
 class GraphQL():
-  def __init__(self, session: requests.Session, url: str, tag: str, subscriptions: List[str] = [], metadata_language: str = 'fr'):
+  def __init__(self, session: requests.Session, url: str, tag: str, metadata_language: str = 'fr'):
     self.session: requests.Session = session
     self.url: str = url
     self.tag: str = tag
-    self.subscriptions: List[str] = subscriptions
+    self.subscriptions: List[str] = []
+    self.scopes: List[str] = []
+    self.packages: List[str] = []
     if metadata_language.lower() == 'en' or metadata_language.lower() == 'english':
       self.metadata_language = 'ENGLISH'
     else:
        self.metadata_language = 'FRENCH'
-
-  def get_graphql_subs(self) -> List[str]:
-    graphql_subs = []
-    for subscription in self.subscriptions:
-      if subscription in GRAPHQL_SUBS_ID:
-        graphql_subs.append(GRAPHQL_SUBS_ID[subscription])
-    return graphql_subs
 
   # ===================================================================
   #
@@ -83,11 +78,12 @@ class GraphQL():
         result.title = item['title']
         if len(item['images']) > 0:
           result.image = item['images'][0]['url']
-        req_ids = item['resourceCodes']
-        result.requirements = []
-        for req_id in req_ids:
-          if req_id in GRAPHQL_SUBS_ID:
-            result.requirements.append(GRAPHQL_SUBS_ID[req_id])
+        result.requirements = item['resourceCodes']
+        result.has_access = False
+        for requirement in result.requirements:
+          if requirement in self.scopes:
+            result.has_access = True
+            break
         result.platform_tag = self.tag
         result.search_title = result.title
         result.id = item['id']
@@ -211,6 +207,16 @@ class GraphQL():
     if len(infos.medias['default'].playback_languages) == 0:
       logger.debug('Playback language does not fit request language')
       return None
+
+    #===========================================================
+    # Access check
+    #===========================================================
+    infos.medias['default'].has_access = False
+    for constraint in content['authConstraints']:
+      if constraint['language'].lower() == version:
+        if constraint['packageName'] in self.packages:
+          infos.medias['default'].has_access = True
+          break
 
     #===========================================================
     # Movie infos
@@ -349,9 +355,19 @@ class GraphQL():
             continue
 
           #===========================================================
-          # Episode infos
+          # Access check
           #===========================================================
           temp_episode = MediaEpisode()
+          temp_episode.has_access = False
+          for constraint in episode['authConstraints']:
+            if constraint['language'].lower() == version:
+              if constraint['packageName'] in self.packages:
+                temp_episode.has_access = True
+                break
+
+          #===========================================================
+          # Episode infos
+          #===========================================================
           # Episode
           temp_episode.season = season_num
           temp_episode.episode = episode_num
@@ -405,7 +421,7 @@ class GraphQL():
 
   def _make_request(self, partial_data: Dict[str, Any], playback_language: str = 'FRENCH') -> requests.Response:
     data = deepcopy(partial_data)
-    data['variables']['subscriptions'] = self.get_graphql_subs()
+    data['variables']['subscriptions'] = self.subscriptions
     data['variables']['language'] = self.metadata_language
     data['variables']['playbackLanguage'] = playback_language
     return self.session.post(url=self.url, headers=HEADERS, json=data)

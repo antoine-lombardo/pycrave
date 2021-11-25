@@ -9,6 +9,7 @@ class Media(ABC):
     self.description: str = ''
     self.summary: str = ''
     self.image: str = ''
+    self.has_access: bool = True
 
     self.duration: int = 0
     self.playback_languages: List[str] = []

@@ -159,6 +159,9 @@ class Crave(Platform):
             Returns:
                 PlayInfos: The play infos
         '''
+        if not media.has_access:
+            logger.error('You don\'t have access to this content')
+            return None
         return self._get_play_infos_id(
             id =          media.play_id,
             destination = media.additionnal_infos['destination'],
@@ -188,7 +191,7 @@ class Crave(Platform):
         self.account_infos = None
         if not self.login_handler.login(username, password):
             return False
-        if self._get_account_infos() is None:
+        if self.get_account_infos() is None:
             return False
         return True
 
@@ -205,6 +208,8 @@ class Crave(Platform):
             return None
         try:
             self.graphql.subscriptions = self.login_handler.subscriptions
+            self.graphql.scopes = self.login_handler.scopes
+            self.graphql.packages = self.login_handler.packages
             self.account_infos = Account()
             url = 'https://account.bellmedia.ca/api/profile/v1.1'
             response = self._make_request_bearer(url=url, method='GET')

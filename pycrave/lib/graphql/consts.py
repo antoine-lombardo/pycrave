@@ -1,13 +1,5 @@
-GRAPHQL_SUBS_ID = {
-  'cravetv': 'CRAVE',
-  'se': 'SUPER_ECRAN',
-}
 
-GRAPHQL_REQS_ID = {
-  'cravetv': 'cravetv',
-  'cravep': 'cravetv',
-  'se': 'se'
-}
+
 
 HEADERS = {
   'accept': 'application/json',

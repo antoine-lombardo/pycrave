@@ -5,6 +5,7 @@ class SearchResult():
 
   def __init__(self, dict = None):
     self.requirements: List[str] = []
+    self.has_access: bool = True
     self.title: str = ''
     self.search_title: str = ''
     self.type: str = ''

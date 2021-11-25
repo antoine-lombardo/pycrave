@@ -1,6 +1,26 @@
 CLIENT_ID = "crave-android"
 CLIENT_PASS = 'default'
 
+DESTINATION_TO_SUBSCRIPTION = {
+  'starz_atexace': 'starz',
+  'crave_atexace': 'crave',
+  'se_atexace':    'superecran'
+}
+
+SUBSCRIPTION_NAME_TO_PACKAGE_NAME = {
+  'STARZ':       'starz_atexace',
+  'CRAVE':       'crave_atexace',
+  'SUPER_ECRAN': 'se_atexace'
+}
+
+SCOPE_TO_SUBSCRIPTION_NAME = {
+  'crave_total': 'CRAVE_TOTAL',
+  'cravep':      'CRAVE_PLUS',
+  'cravetv':     'CRAVE',
+  'se':          'SUPER_ECRAN',
+  'starz':       'STARZ'
+}
+
 BASE_HEADERS = {
   'accept-encoding': 'gzip',
   'connection': 'Keep-Alive',
