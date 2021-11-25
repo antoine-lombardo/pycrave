@@ -39,6 +39,7 @@ class CraveLoginHandler(LoginHandler):
   # ===================================================================
 
   def login(self, username: str, password: str) -> bool:
+    logger.debug('Logging in...')
     # Set username and password
     self.username = username
     self.password = password
@@ -50,6 +51,7 @@ class CraveLoginHandler(LoginHandler):
     return self.ensure_login()
 
   def logout(self) -> None:
+    logger.debug('Logging out...')
     self.username = None
     self.password = None
     self.access_token = None

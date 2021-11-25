@@ -52,7 +52,9 @@ class Crave(Platform):
             logger.info('Unable to login')
 
     # ===================================================================
+    #
     #   SEARCH
+    #
     # ===================================================================
 
     def search(self, input: str)-> List[SearchResult]:
@@ -67,7 +69,9 @@ class Crave(Platform):
         return self.graphql.search(input)
 
     # ===================================================================
+    #
     #   RESULT INFOS
+    #
     # ===================================================================
 
     def get_result_infos(self, result: SearchResult) -> Dict[str, Union[MovieResultInfo, SerieResultInfo]]:
@@ -93,33 +97,51 @@ class Crave(Platform):
         return self.graphql.get_result_infos_id(content_id)
 
     # ===================================================================
+    #
     #   PLAY INFOS
+    #
     # ===================================================================
 
-    '''
-    Get play infos
-    '''
-    def get_play_infos(self, result_infos: ResultInfo, season: int = None, episode: int = None):
+    def get_play_infos(self, result_infos: ResultInfo, season: int = None, episode: int = None) -> PlayInfos:
+        '''
+        Returns play infos for the provided result infos
+            Args:
+                result_infos (ResultInfo): The result infos
+                season (int): The season number (only for series)
+                episode (int): The episode number (only for series)
+            Returns:
+                PlayInfos: The play infos
+        '''
         if result_infos.type == 'movie':
             return self._get_play_infos_movie(result_infos)
         elif result_infos.type == 'serie':
             return self._get_play_infos_episode(result_infos, season, episode)
         return None
 
-    '''
-    Get play infos (movie)
-    '''
-    def _get_play_infos_movie(self, result_infos: MovieResultInfo, language: str = 'fr') -> PlayInfos:
+    def _get_play_infos_movie(self, result_infos: MovieResultInfo) -> PlayInfos:
+        '''
+        Returns play infos for the provided movie
+            Args:
+                result_infos (ResultInfo): The movie
+            Returns:
+                PlayInfos: The play infos
+        '''
         if result_infos.year > 0:
             logger.debug('Getting play infos for "{} ({})"...'.format(result_infos.title, str(result_infos.year)))
         else:
             logger.debug('Getting play infos for "{}"...'.format(result_infos.title))
         return self._get_play_infos_media(result_infos.medias['default'])
 
-    '''
-    Get play infos (episode)
-    '''
-    def _get_play_infos_episode(self, result_infos: SerieResultInfo, season: int, episode: int, language: str = 'fr') -> PlayInfos:
+    def _get_play_infos_episode(self, result_infos: SerieResultInfo, season: int, episode: int) -> PlayInfos:
+        '''
+        Returns play infos for the provided serie episode
+            Args:
+                result_infos (ResultInfo): The serie
+                season (int): The season number
+                episode (int): The episode number
+            Returns:
+                PlayInfos: The play infos
+        '''
         if season is None or episode is None:
             logger.error('No season or episode provided')
             return None
@@ -130,21 +152,36 @@ class Crave(Platform):
         logger.debug('Episode {} not found'.format(format_episode_number(season, episode)))
 
     def _get_play_infos_media(self, media: Media) -> PlayInfos:
+        '''
+        Returns play infos for the provided media
+            Args:
+                media (Media): The media
+            Returns:
+                PlayInfos: The play infos
+        '''
         return self._get_play_infos_id(
             id =          media.play_id,
             destination = media.additionnal_infos['destination'],
             language =    media.playback_languages[0])
 
-    '''
-    Get play infos (id)
-    '''
     def _get_play_infos_id(self, id: str, destination: str, language: str = 'fr') -> PlayInfos:
+        '''
+        Returns play infos for the provided media ID
+            Args:
+                id (str): The media ID
+                destination (str): The destination ID
+                language (str): The language ('fr' or 'en')
+            Returns:
+                PlayInfos: The play infos
+        '''
         if not self.ensure_login():
             return None
         return CAPI.get_play_infos(destination, id, language, token=self.login_handler.access_token, filter='0x14')
 
     # ===================================================================
+    #
     #   ACCOUNT
+    #
     # ===================================================================
 
     def login(self, username: str, password: str) -> bool:
