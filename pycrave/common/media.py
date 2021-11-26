@@ -3,6 +3,7 @@ from typing import Dict, List, Any
 
 class Media(ABC):
   def __init__(self):
+    self.obj_type = 'media'
     self.type: str = 'media'
 
     self.title: str = ''
@@ -20,11 +21,13 @@ class Media(ABC):
 class MediaMovie(Media):
   def __init__(self):
     super().__init__()
+    self.type: str = 'movie'
 
 
 class MediaEpisode(Media):
   def __init__(self):
     super().__init__()
+    self.type: str = 'episode'
     self.season: str = None
     self.episode: str = None
     self.episode_tag: str = None

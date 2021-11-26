@@ -17,7 +17,10 @@ crave = Crave(
   metadata_lang = 'en'
   )
 
-
+categories = crave.get_root_categories()
+serie_category = crave.get_elements(categories[0])
+drames_category = crave.get_elements(serie_category[0])
+collection_category = crave.get_elements(categories[4])
 
 search_result = crave.search("madame lebrun")
 serie_infos = crave.get_result_infos(search_result[0])
@@ -33,4 +36,3 @@ logger.info('License URL: {}'.format(play_infos_serie.license_url))
 play_infos_movie = crave.get_play_infos(movie_infos['fr'])
 logger.info('Manifest: {}'.format(play_infos_movie.manifest_url))
 logger.info('License URL: {}'.format(play_infos_movie.license_url))
-print("ss")

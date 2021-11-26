@@ -4,6 +4,7 @@ from typing import List
 class SearchResult():
 
   def __init__(self, dict = None):
+    self.obj_type = 'result'
     self.requirements: List[str] = []
     self.has_access: bool = True
     self.title: str = ''

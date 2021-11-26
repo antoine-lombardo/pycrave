@@ -5,6 +5,7 @@ from .media import Media
 
 class ResultInfo(ABC):
   def __init__(self):
+    self.obj_type = 'title'
     self.type: str = ''
 
     self.title: str = ''
