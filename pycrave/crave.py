@@ -1,7 +1,6 @@
 # External stuff
 from copy import copy
 import json
-from fuzzywuzzy import fuzz, process
 import logging
 from pycrave.common.category import Category
 
@@ -33,10 +32,10 @@ class Crave(Platform):
     name = 'Crave'
     tag = 'crave'
 
-
     # ================================================================
     #   __init__()
     # ================================================================
+
     def __init__(self, cache_dir: str, username: str = None, password: str = None, metadata_lang: str = 'fr'):
         '''
         Initialises the client.
@@ -47,17 +46,15 @@ class Crave(Platform):
                 metadata_lang (str): Language used to fetch metadata
         '''
         super().__init__(cache_dir)
-        self.graphql = GraphQL(self.session, 'https://www.crave.ca/space-graphql/graphql/', self.tag, metadata_language=metadata_lang)
-        self.login_handler: CraveLoginHandler = CraveLoginHandler(self.cache_dir, self.session, username, password)
+        self.graphql = GraphQL(self.session, 'https://www.crave.ca/space-graphql/graphql/',
+                               self.tag, metadata_language=metadata_lang)
+        self.login_handler: CraveLoginHandler = CraveLoginHandler(
+            self.cache_dir, self.session, username, password)
         self.account_infos: Account = None
         if self.login_handler.ensure_login():
             self.get_account_infos()
         else:
             logger.info('Unable to login')
-
-
-
-
 
     # ===================================================================
     #
@@ -68,7 +65,8 @@ class Crave(Platform):
     # ================================================================
     #   get_root_categories()
     # ================================================================
-    def get_root_categories(self)-> List[Category]:
+
+    def get_root_categories(self) -> List[Category]:
         '''
         List home page categories
             Returns:
@@ -77,22 +75,17 @@ class Crave(Platform):
         logger.debug('Listing root categories...')
         return self.graphql.get_root_categories()
 
-
-
     # ================================================================
     #   get_elements()
     # ================================================================
-    def get_elements(self, category: Category)-> List[Union[Category, ResultInfo]]:
+
+    def get_elements(self, category: Category) -> List[Union[Category, ResultInfo]]:
         '''
         List all category elements
             Returns:
                 List[Union[Category, ResultInfo]]: A list of elements in category
         '''
         return self.graphql.get_elements(category)
-
-
-
-
 
     # ===================================================================
     #
@@ -103,7 +96,8 @@ class Crave(Platform):
     # ================================================================
     #   search()
     # ================================================================
-    def search(self, input: str)-> List[SearchResult]:
+
+    def search(self, input: str) -> List[SearchResult]:
         '''
         Search a title.
             Args:
@@ -114,10 +108,6 @@ class Crave(Platform):
         logger.debug('Making a search for "{}"...'.format(input))
         return self.graphql.search(input)
 
-
-
-
-
     # ===================================================================
     #
     #   RESULT INFOS
@@ -127,6 +117,7 @@ class Crave(Platform):
     # ================================================================
     #   get_result_infos()
     # ================================================================
+
     def get_result_infos(self, result: SearchResult) -> Dict[str, Union[MovieResultInfo, SerieResultInfo]]:
         '''
         Get more infos about a specific search result
@@ -138,11 +129,10 @@ class Crave(Platform):
         logger.debug('Getting infos for "{}"...'.format(result.title))
         return self.graphql.get_result_infos(result)
 
-
-
     # ================================================================
     #   get_result_infos_id()
     # ================================================================
+
     def get_result_infos_id(self, content_id: str) -> Dict[str, Union[MovieResultInfo, SerieResultInfo]]:
         '''
         Get more infos about a specific search result
@@ -154,10 +144,6 @@ class Crave(Platform):
         logger.debug('Getting infos for "{}"...'.format(content_id))
         return self.graphql.get_result_infos_id(content_id)
 
-
-
-
-
     # ===================================================================
     #
     #   PLAY INFOS
@@ -167,6 +153,7 @@ class Crave(Platform):
     # ================================================================
     #   get_play_infos()
     # ================================================================
+
     def get_play_infos(self, result_infos: ResultInfo, season: int = None, episode: int = None) -> PlayInfos:
         '''
         Returns play infos for the provided result infos
@@ -183,11 +170,10 @@ class Crave(Platform):
             return self._get_play_infos_episode(result_infos, season, episode)
         return None
 
-
-
     # ================================================================
     #   _get_play_infos_movie()
     # ================================================================
+
     def _get_play_infos_movie(self, result_infos: MovieResultInfo) -> PlayInfos:
         '''
         Returns play infos for the provided movie
@@ -197,16 +183,17 @@ class Crave(Platform):
                 PlayInfos: The play infos
         '''
         if result_infos.year > 0:
-            logger.debug('Getting play infos for "{} ({})"...'.format(result_infos.title, str(result_infos.year)))
+            logger.debug('Getting play infos for "{} ({})"...'.format(
+                result_infos.title, str(result_infos.year)))
         else:
-            logger.debug('Getting play infos for "{}"...'.format(result_infos.title))
+            logger.debug('Getting play infos for "{}"...'.format(
+                result_infos.title))
         return self._get_play_infos_media(result_infos.medias['default'])
-
-
 
     # ================================================================
     #   _get_play_infos_episode()
     # ================================================================
+
     def _get_play_infos_episode(self, result_infos: SerieResultInfo, season: int, episode: int) -> PlayInfos:
         '''
         Returns play infos for the provided serie episode
@@ -220,17 +207,18 @@ class Crave(Platform):
         if season is None or episode is None:
             logger.error('No season or episode provided')
             return None
-        logger.debug('Getting play infos for "{} {}"...'.format(result_infos.title, format_episode_number(season, episode)))
+        logger.debug('Getting play infos for "{} {}"...'.format(
+            result_infos.title, format_episode_number(season, episode)))
         for media in result_infos.medias.values():
             if media.season == season and media.episode == episode:
                 return self._get_play_infos_media(media)
-        logger.debug('Episode {} not found'.format(format_episode_number(season, episode)))
-
-
+        logger.debug('Episode {} not found'.format(
+            format_episode_number(season, episode)))
 
     # ================================================================
     #   _get_play_infos_media()
     # ================================================================
+
     def _get_play_infos_media(self, media: Media) -> PlayInfos:
         '''
         Returns play infos for the provided media
@@ -243,15 +231,14 @@ class Crave(Platform):
             logger.error('You don\'t have access to this content')
             return None
         return self._get_play_infos_id(
-            id =          media.play_id,
-            destination = media.additionnal_infos['destination'],
-            language =    media.playback_languages[0])
-
-
+            id=media.play_id,
+            destination=media.additionnal_infos['destination'],
+            language=media.playback_languages[0])
 
     # ================================================================
     #   _get_play_infos_id()
     # ================================================================
+
     def _get_play_infos_id(self, id: str, destination: str, language: str = 'fr') -> PlayInfos:
         '''
         Returns play infos for the provided media ID
@@ -266,10 +253,6 @@ class Crave(Platform):
             return None
         return CAPI.get_play_infos(destination, id, language, token=self.login_handler.access_token, filter='0x14')
 
-
-
-
-
     # ===================================================================
     #
     #   ACCOUNT
@@ -279,6 +262,7 @@ class Crave(Platform):
     # ================================================================
     #   login()
     # ================================================================
+
     def login(self, username: str, password: str) -> bool:
         self.account_infos = None
         if not self.login_handler.login(username, password):
@@ -287,28 +271,25 @@ class Crave(Platform):
             return False
         return True
 
-
-
     # ================================================================
     #   logout()
     # ================================================================
+
     def logout(self) -> None:
         self.account_infos = None
         self.login_handler.logout()
 
-
-
     # ================================================================
     #   ensure_login()
     # ================================================================
+
     def ensure_login(self) -> bool:
         return self.login_handler.ensure_login()
-
-
 
     # ================================================================
     #   get_account_infos()
     # ================================================================
+
     def get_account_infos(self) -> Account:
         if not self.login_handler.ensure_login():
             self.account_infos = None
@@ -328,10 +309,6 @@ class Crave(Platform):
             self.account_infos = None
             return None
 
-
-
-
-
     # ===================================================================
     #   REQUESTS
     # ===================================================================
@@ -339,20 +316,19 @@ class Crave(Platform):
     # ================================================================
     #   _make_request_license()
     # ================================================================
+
     def _make_request_license(self, url: str, token: str, challenge):
         headers = copy(BASE_HEADERS)
         headers['Authorization'] = 'Bearer ' + token
         return self._make_request(url, headers=headers, data=challenge, method='POST-DATA').content
 
-
-
     # ================================================================
     #   _make_request_bearer()
     # ================================================================
+
     def _make_request_bearer(self, url: str, data: Dict[str, Any] = {}, method: str = 'POST'):
         if not self.login_handler.ensure_login():
             return None
         headers = copy(BASE_HEADERS)
         headers['Authorization'] = 'Bearer ' + self.login_handler.access_token
         return self._make_request(url, headers=headers, data=data, method=method)
-

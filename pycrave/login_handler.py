@@ -3,7 +3,6 @@ from typing import Dict, List
 from datetime import datetime, timedelta
 import base64
 
-from .common.account import Account
 from .common.login_handler import LoginHandler
 from .consts import *
 
